@@ -35,9 +35,9 @@ quantidade_anomalias = (dados['anomaly_flag'] == 'yes').sum()
 #       Sidebar
 # --------------------
 st.sidebar.title('Filtros')
-# Filtro de máquinas e semanas
+
+# Filtro de máquinas, semanas e tipo de falha
 maquinas = sorted(dados['machine'].unique())
-# Adiciona opção "Selecionar todas"
 maquinas_opcoes = ['Selecionar todas'] + list(maquinas)
 maquinas_selecionadas = st.sidebar.multiselect('Selecione a(s) máquina(s):', maquinas_opcoes, default=['Selecionar todas'])
 
@@ -48,22 +48,57 @@ else:
     maquinas_filtrar = maquinas_selecionadas
 
 semanas = sorted(dados['semana'].unique())
-# Adiciona opção "Selecionar todas"
 semanas_opcoes = ['Selecionar todas'] + semanas
 semanas_selecionadas = st.sidebar.multiselect('Selecione a(s) semana(s):', semanas_opcoes, default=['Selecionar todas'])
 
-# Se "Selecionar todas" estiver selecionado, seleciona todas as semanas
 if 'Selecionar todas' in semanas_selecionadas or not semanas_selecionadas:
     semanas_filtrar = semanas
 else:
     semanas_filtrar = semanas_selecionadas
 
-# Filtra os dados pelas máquinas e semanas selecionadas
+# Adiciona filtro de tipo de falha
+failure_types = sorted(dados['failure_type'].dropna().unique())
+failure_types_opcoes = ['Selecionar todas'] + list(failure_types)
+failure_types_selecionadas = st.sidebar.multiselect('Selecione o(s) tipo(s) de falha:', failure_types_opcoes, default=['Selecionar todas'])
+
+if 'Selecionar todas' in failure_types_selecionadas or not failure_types_selecionadas:
+    failure_types_filtrar = failure_types
+else:
+    failure_types_filtrar = failure_types_selecionadas
+
+# Filtra os dados pelas máquinas, semanas e tipos de falha selecionados
 dados_filtrados = dados[
     (dados['machine'].isin(maquinas_filtrar)) &
-    (dados['semana'].isin(semanas_filtrar))
+    (dados['semana'].isin(semanas_filtrar)) &
+    (dados['failure_type'].isin(failure_types_filtrar))
+]
+
+
+# Adiciona filtro de energy_consumption
+energy_min = float(dados['energy_consumption'].min())
+energy_max = float(dados['energy_consumption'].max())
+energy_range = st.sidebar.slider(
+    'Selecione o intervalo de consumo de energia:',
+    min_value=energy_min,
+    max_value=energy_max,
+    value=(energy_min, energy_max)
+)
+
+# ...existing code...
+
+# Filtra os dados pelas máquinas, semanas, tipos de falha e energy_consumption selecionados
+dados_filtrados = dados[
+    (dados['machine'].isin(maquinas_filtrar)) &
+    (dados['semana'].isin(semanas_filtrar)) &
+    (dados['failure_type'].isin(failure_types_filtrar)) &
+    (dados['energy_consumption'] >= energy_range[0]) &
+    (dados['energy_consumption'] <= energy_range[1])
 ]
 st.session_state['dados_filtrados'] = dados_filtrados
+
+st.session_state['dados_filtrados'] = dados_filtrados
+
+# ...existing code...
 # --------------------
 #       Dashboard
 # --------------------
